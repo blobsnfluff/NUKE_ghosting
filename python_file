@@ -1,0 +1,90 @@
+import math
+
+footage = nuke.selectedNode()
+firstFrame = footage['first'].value()
+lastFrame = footage['last'].value()
+
+# REMAP VALUES
+
+frameRange = range(firstFrame, lastFrame)
+x = (firstFrame - firstFrame) / (lastFrame - firstFrame)
+y = (lastFrame - firstFrame) / (lastFrame - firstFrame)
+mergeNodes = []
+
+
+#for f in frameRange :
+for f in frameRange :
+
+  #print 'MAIN FRAME IS ' + str(f)
+  remapFrame = ((f - firstFrame*1.0) / (lastFrame - firstFrame))*math.pi
+  sinFrame = math.sin(remapFrame)
+  #print 'current sin is ' + str(sinFrame)
+  offset = ((math.pi)/2) - sinFrame
+  #print 'current offset is ' + str(offset)
+  #print str(sinFrame + offset)
+
+  frameHolds = []
+  mainMergeFrames_node = nuke.nodes.Merge2(name = 'mainMergeNode_frame_' + str(f), operation = 'plus')
+  mainMergeFrames_node['mix'].setAnimated(0)
+  merge_an = mainMergeFrames_node['mix'].animations()[0]
+  merge_an.setKey(f-1, 0)
+  merge_an.setKey(f, 1)
+  merge_an.setKey(f+1, 0)
+  mergeNodes.append(mainMergeFrames_node)
+  
+  
+  #for f in frameRange :
+  for i in range(1,10) :
+    remapFrame = ((i - firstFrame*1.0) / (lastFrame - firstFrame))*math.pi
+    sinFrame = math.sin(remapFrame) + offset
+    mixValue = math.sin(sinFrame)
+    
+    
+    # multiplication des valeurs de mix
+    
+    if mixValue == 1:
+    mixValue = mixValue
+
+    else :
+    mixValue = mixValue - remapFrame*1.5
+    mixValue = str(mixValue)
+
+    if mixValue < 0:
+      mixValue = 0
+      else:
+      pass
+
+    print remapFrame
+    print sinFrame
+    print mixValue
+
+
+  frameHold_node = nuke.nodes.FrameHold(name = 'frameHoldNode_frame_' + str(i), first_frame = i)
+  frameHold_node.setInput(0, footage)
+  multiply_node = nuke.nodes.Merge(name= 'multiplyNode__frame' + str(i),mix = mixValue)
+  multiply_node.setInput(1,frameHold_node)
+  frameHolds.append(multiply_node)
+
+  mainMergeFrames_node.setInput(i+3, multiply_node)
+
+# creation du merge final pour toutes les frames du shot
+
+finalMergeFrames_node = nuke.nodes.Merge2(name = 'finalMergeNode_frame_', operation = 'plus')
+
+i = 3
+
+# connection de toutes les frames dans le noeud de merge final
+
+for mergeNode in mergeNodes:
+  finalMergeFrames_node.setInput(i,mergeNode)
+  i = i+1
+
+
+
+
+
+
+
+
+
+
